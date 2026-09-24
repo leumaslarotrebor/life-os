@@ -371,61 +371,62 @@ The Alexa+ implementation should use a self-hosted MCP server using Streamable H
 
 The MCP server will expose structured tools.
 
-Initial tools:
+**DECISION RESOLVED:** The V1 implementation contains only the 9 essential tools
+below. All other tools are explicitly deferred.
 
-## Goal Tools
+## V1 Essential Tools
+
+### Goal Tools
 
 create_goal
-get_goal
 list_goals
+
+### Context Tools
+
+get_current_context
+
+### Event Tools
+
+record_event
+get_recent_events
+
+### Monitoring Tools
+
+create_monitor
+list_monitors
+
+### Action Tools
+
+create_notification
+record_action
+
+## Deferred Tools
+
+The following tools must NOT be implemented until the V1 core loop is stable:
+
 update_goal
 complete_goal
-
-## Planning Tools
-
 create_plan
 get_plan
 update_plan
 replan_goal
-
-## Context Tools
-
-get_current_context
+get_goal
 get_relevant_context
 store_memory
 retrieve_memory
-
-## Event Tools
-
-get_recent_events
-record_event
-evaluate_event
-
-## Monitoring Tools
-
-create_monitor
-list_monitors
 get_monitor
 update_monitor
 disable_monitor
-
-## Home Simulation Tools
-
 get_home_state
 get_door_state
 get_recent_home_activity
 activate_home_mode
 
-## Action Tools
+## Removed Tools
 
-create_notification
-record_action
-
-The final tool list may be reduced if unnecessary.
-
-Do NOT implement every tool automatically.
-
-Only implement tools required by the final product.
+evaluate_event — REMOVED.
+Event relevance evaluation is an internal AI agent reasoning step.
+It is not an MCP tool.
 
 ---
 
@@ -848,6 +849,8 @@ Primary track: Alexa+
 
 AWS Builder: TARGET
 
+Architecture review: COMPLETE
+
 Implementation: NOT STARTED
 
 MCP server: NOT STARTED
@@ -863,3 +866,14 @@ AI agent: NOT STARTED
 Demo: NOT STARTED
 
 Devpost submission: NOT STARTED
+
+---
+
+# 28. Resolved Pre-Implementation Decisions
+
+| Decision | Resolution |
+|---|---|
+| Agent location | Inside `backend/agent/` — no separate top-level `agent/` directory |
+| `evaluate_event` MCP tool | Removed — internal AI agent reasoning step |
+| Memory / storage for V1 | PostgreSQL only — no vector database, no pgvector |
+| V1 MCP tool set | 9 essential tools (see §10) |
