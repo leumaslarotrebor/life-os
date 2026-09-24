@@ -1,7 +1,7 @@
 # LIFE OS — Technical Architecture
 
-Version: 1.0
-Status: Initial Architecture
+Version: 1.1
+Status: Initial Architecture (Decisions Resolved)
 
 ---
 
@@ -45,8 +45,9 @@ The system must maintain persistent context and support event-driven workflows.
              v                           v
       +-------------+             +---------------+
       | AI AGENT    |             | PostgreSQL    |
-      | Orchestrator|             | / Supabase    |
-      +------+------+             +---------------+
+      | (backend/   |             | / Supabase    |
+      |  agent/)    |             +---------------+
+      +------+------+
              |
              v
       +-------------+
@@ -74,66 +75,80 @@ The system must maintain persistent context and support event-driven workflows.
              +------+------+
              | AWS Bedrock |
              +-------------+
-3. Frontend
+```
+
+---
+
+# 3. Frontend
 
 Technology:
 
-React or Next.js
-TypeScript
-modern CSS/UI system
+- React or Next.js
+- TypeScript
+- modern CSS/UI system
 
 The frontend is responsible for:
 
-conversational interface
-dashboard
-goals
-plans
-monitors
-event timeline
-AI activity
-settings
+- conversational interface
+- dashboard
+- goals
+- monitors
+- event timeline
+- AI activity
+- settings
 
 The frontend must NOT contain business logic that belongs in the backend.
 
-4. Backend
+---
+
+# 4. Backend
 
 Technology:
 
-Python
-FastAPI
+- Python
+- FastAPI
 
 Responsibilities:
 
-API endpoints
-authentication/session handling
-request validation
-agent orchestration
-database access
-event processing
-MCP integration
-audit logging
+- API endpoints
+- authentication/session handling
+- request validation
+- agent orchestration
+- database access
+- event processing
+- MCP integration
+- audit logging
 
 The backend should be modular.
 
+**DECISION RESOLVED:** The AI agent code lives inside the backend as a module.
+There is NO separate top-level `agent/` directory.
+
 Suggested structure:
 
+```
 backend/
 ├── main.py
 ├── api/
 ├── services/
 ├── models/
 ├── schemas/
-├── agent/
+├── agent/          ← AI agent lives here, inside the backend
 ├── events/
 ├── memory/
 ├── database/
 └── tests/
-5. AI Agent
+```
+
+---
+
+# 5. AI Agent
 
 The AI agent is responsible for reasoning over user requests and available context.
 
 The agent should follow:
 
+```
 USER REQUEST
      |
      v
@@ -162,81 +177,116 @@ RESPOND OR REQUEST CONFIRMATION
      |
      v
 AUDIT ACTION
+```
 
-The agent must not directly access arbitrary databases or services if a defined tool should be used.
+**DECISION RESOLVED:** Event relevance evaluation is an internal AI agent
+reasoning step, NOT an MCP tool. When an event arrives, the agent retrieves
+context via MCP tools and reasons internally about whether the event matters.
+There is no `evaluate_event` MCP tool.
 
-6. AWS Bedrock
+The agent must not directly access arbitrary databases or services if a defined
+tool should be used.
+
+---
+
+# 6. AWS Bedrock
 
 AWS Bedrock is the target production AI service for the hackathon implementation.
 
 Purpose:
 
-natural-language understanding
-reasoning
-planning
-tool selection
-event interpretation
-response generation
+- natural-language understanding
+- reasoning
+- planning
+- tool selection
+- event interpretation
+- response generation
 
 Bedrock must be used meaningfully.
 
 Do not add Bedrock only for the sake of qualifying for the AWS Builder challenge.
 
-7. MCP Architecture
+---
+
+# 7. MCP Architecture
 
 The MCP server is a core part of the Alexa+ implementation.
 
 Transport:
 
-Streamable HTTP
+- Streamable HTTP
 
 The MCP server exposes structured tools.
 
-Initial tool categories:
+**DECISION RESOLVED:** The V1 implementation contains only the essential tools
+required for the first working demo. Deferred tools are documented separately.
 
-Goals
-create_goal
-get_goal
-list_goals
-update_goal
-complete_goal
-Plans
-create_plan
-get_plan
-update_plan
-replan_goal
-Context / Memory
-get_current_context
-get_relevant_context
-store_memory
-retrieve_memory
-Events
-record_event
-get_recent_events
-evaluate_event
-Monitoring
-create_monitor
-list_monitors
-get_monitor
-update_monitor
-disable_monitor
-Home Simulation
-get_home_state
-get_door_state
-get_recent_home_activity
-activate_home_mode
-Actions
-create_notification
-record_action
+### V1 Essential Tools
 
-The final implementation may contain fewer tools.
+#### Goal Tools
+- `create_goal`
+- `list_goals`
 
-Only necessary tools should be implemented.
+#### Context Tools
+- `get_current_context`
 
-8. MCP Tool Flow
+#### Event Tools
+- `record_event`
+- `get_recent_events`
+
+#### Monitoring Tools
+- `create_monitor`
+- `list_monitors`
+
+#### Action Tools
+- `create_notification`
+- `record_action`
+
+**Total V1 tools: 9**
+
+### Deferred Tools (implement after V1 core loop works)
+
+The following tools are explicitly deferred. Do not implement them until the
+V1 core loop is stable.
+
+#### Deferred Goal Tools
+- `get_goal`
+- `update_goal`
+- `complete_goal`
+
+#### Deferred Planning Tools
+- `create_plan`
+- `get_plan`
+- `update_plan`
+- `replan_goal`
+
+#### Deferred Context / Memory Tools
+- `get_relevant_context`
+- `store_memory`
+- `retrieve_memory`
+
+#### Deferred Monitoring Tools
+- `get_monitor`
+- `update_monitor`
+- `disable_monitor`
+
+#### Deferred Home Simulation Tools
+- `get_home_state`
+- `get_door_state`
+- `get_recent_home_activity`
+- `activate_home_mode`
+
+#### Removed Tools
+- `evaluate_event` — **REMOVED.** Event relevance evaluation is an internal
+  agent reasoning step, not an MCP tool.
+
+---
+
+# 8. MCP Tool Flow
 
 Example:
 
+```
 User:
 "I'm leaving for three days."
 
@@ -251,10 +301,6 @@ get_current_context()
         |
         v
 
-get_relevant_context()
-        |
-        v
-
 create_monitor()
         |
         v
@@ -264,83 +310,102 @@ record_action()
         v
 
 AI response
+```
 
 The agent should use tools instead of inventing information.
 
-9. Database
+---
 
-Target:
+# 9. Database
 
-PostgreSQL / Supabase
+**DECISION RESOLVED:** PostgreSQL is the only persistent storage for V1.
+
+- No vector database.
+- No pgvector extension.
+- All goals, monitors, events, actions, memories, and context are stored as
+  rows in PostgreSQL.
+- pgvector may be reconsidered after V1 is working if semantic search becomes
+  genuinely necessary.
+
+Target: PostgreSQL / Supabase
 
 Initial entities:
 
-users
-goals
-plans
-tasks
-events
-memories
-monitors
-actions
-contexts
-notifications
-10. Goal Model
+- users
+- goals
+- events
+- memories
+- monitors
+- actions
+- notifications
+
+---
+
+# 10. Goal Model
 
 A goal should contain approximately:
 
-id
-title
-description
-status
-priority
-deadline
-created_at
-updated_at
+- id
+- title
+- description
+- status
+- priority
+- deadline
+- created_at
+- updated_at
 
 Possible statuses:
 
-active
-paused
-completed
-cancelled
-11. Event Model
+- active
+- paused
+- completed
+- cancelled
+
+---
+
+# 11. Event Model
 
 An event should contain:
 
-id
-timestamp
-source
-event_type
-payload
-importance
-processed
-created_at
+- id
+- timestamp
+- source
+- event_type
+- payload
+- importance
+- processed
+- created_at
 
 Example:
 
+```json
 {
   "source": "home_simulator",
   "event_type": "package_delivered",
   "importance": "medium"
 }
-12. Monitor Model
+```
+
+---
+
+# 12. Monitor Model
 
 A monitor represents an ongoing condition that LIFE OS should watch.
 
 Example:
 
-id
-name
-description
-condition
-related_goal
-status
-created_at
-updated_at
+- id
+- name
+- description
+- condition
+- related_goal
+- status
+- created_at
+- updated_at
 
 Example:
 
+```
 Monitor:
 Package delivery while user is away
 
@@ -349,34 +414,46 @@ package_delivered AND user_away
 
 Response:
 notify_user
-13. Memory Architecture
+```
+
+---
+
+# 13. Memory Architecture
+
+**DECISION RESOLVED:** For V1, all memory is stored in PostgreSQL as rows.
 
 Memory is divided into:
 
-Short-term context
+### Short-term context
 
-Recent interaction and current task.
+Recent conversation and current task.
+Stored as rows in the `memories` table with a `type = 'short_term'` tag.
 
-Persistent state
+### Persistent user state
 
 Goals, plans, monitors and preferences.
+Stored in their dedicated tables.
 
-Event history
+### Event history
 
 Important historical events.
+Stored in the `events` table.
 
-Derived memory
+### Derived memory
 
 Useful information inferred from previous events.
+Stored as rows in the `memories` table with a `type = 'derived'` tag.
 
-Memory should be relevant and minimal.
+No vector database is introduced in V1.
+Memory should be relevant and minimal. Do not store unnecessary information.
 
-Do not store unnecessary personal information.
+---
 
-14. Event Processing Architecture
+# 14. Event Processing Architecture
 
 Events follow:
 
+```
 EVENT RECEIVED
       |
       v
@@ -389,10 +466,10 @@ STORE EVENT
 CHECK ACTIVE MONITORS
       |
       v
-RETRIEVE RELEVANT CONTEXT
+RETRIEVE RELEVANT CONTEXT  ← via MCP: get_current_context, get_recent_events
       |
       v
-AI RELEVANCE EVALUATION
+AI RELEVANCE EVALUATION    ← internal agent reasoning step, NOT an MCP tool
       |
       v
 DECISION
@@ -401,19 +478,23 @@ DECISION
 IGNORE     ACTION
              |
              v
-       RECORD ACTION
+       RECORD ACTION        ← via MCP: record_action
              |
              v
-       NOTIFY USER
-15. User Control
+       NOTIFY USER          ← via MCP: create_notification
+```
+
+---
+
+# 15. User Control
 
 The system must distinguish between:
 
-information
-recommendation
-proposed action
-confirmed action
-completed action
+- information
+- recommendation
+- proposed action
+- confirmed action
+- completed action
 
 Example:
 
@@ -425,56 +506,56 @@ before silently changing an important plan.
 
 For consequential actions, confirmation should be used where appropriate.
 
-16. Audit System
+---
+
+# 16. Audit System
 
 Important agent actions must be recorded.
 
 Example:
 
-14:02
-User activated Trip Mode
-
-14:05
-LIFE OS created delivery monitor
-
-16:42
-Package delivery event received
-
-16:42
-Event evaluated as relevant
-
-16:43
-Notification created
+```
+14:02  User activated Trip Mode
+14:05  LIFE OS created delivery monitor
+16:42  Package delivery event received
+16:42  Event evaluated as relevant
+16:43  Notification created
+```
 
 The audit log should make the system understandable.
 
-17. Security
+---
+
+# 17. Security
 
 Never store secrets in source code.
 
 Use environment variables.
 
-Example:
-
+```
 .env
+```
 
 Secrets must never be committed to GitHub.
 
 The application should validate:
 
-user input
-MCP arguments
-database input
-tool responses
+- user input
+- MCP arguments
+- database input
+- tool responses
 
 The AI must not be allowed to execute arbitrary shell commands.
 
-18. Error Handling
+---
+
+# 18. Error Handling
 
 Every external operation should handle failure.
 
 Example:
 
+```
 MCP unavailable
        |
        v
@@ -485,106 +566,84 @@ Does not fabricate result
        |
        v
 Tells user the action could not be completed
+```
 
-The system must never claim:
+The system must never claim "Done" when an action actually failed.
 
-"Done"
+---
 
-when an action actually failed.
+# 19. Simulation Layer
 
-19. Simulation Layer
-
-Because the prototype does not require physical hardware, home/device events may initially be simulated.
+Because the prototype does not require physical hardware, home/device events may
+initially be simulated.
 
 Example simulator:
 
-home_simulator/
-├── devices
-├── events
-├── scenarios
-└── simulator.py
+```
+simulator/
+├── events.py
+└── scenarios.py
+```
 
 Possible simulated events:
 
-door_opened
-door_closed
-package_delivered
-motion_detected
-user_left_home
-user_returned_home
+- door_opened
+- door_closed
+- package_delivered
+- motion_detected
+- user_left_home
+- user_returned_home
 
 The UI and documentation must clearly identify simulated data as simulated.
 
-20. Testing Strategy
+---
+
+# 20. Testing Strategy
 
 Testing layers:
 
-Unit tests
+- Unit tests — test individual functions
+- MCP tests — test tool inputs and outputs
+- Agent tests — test tool selection and behavior
+- Event tests — test event → context → decision flows
+- End-to-end tests — test user request → agent → MCP → database → result → response
 
-Test individual functions.
+---
 
-MCP tests
-
-Test tool inputs and outputs.
-
-Agent tests
-
-Test tool selection and behavior.
-
-Event tests
-
-Test event → context → decision flows.
-
-End-to-end tests
-
-Test:
-
-User request
-→ agent
-→ MCP
-→ database
-→ result
-→ response
-
-21. Example End-to-End Flow
+# 21. Example End-to-End Flow
 
 Scenario:
 
-User:
-
-"I'm leaving home for three days."
+User: "I'm leaving home for three days."
 
 System:
-
-Parse user intent.
-Retrieve active goals.
-Retrieve relevant upcoming events.
-Retrieve current home context.
-Identify potentially relevant monitors.
-Create or propose trip context.
-Ask for confirmation when required.
-Record the decision.
+1. Parse user intent.
+2. Retrieve active goals.
+3. Retrieve relevant upcoming events.
+4. Identify potentially relevant monitors.
+5. Create or propose trip context.
+6. Ask for confirmation when required.
+7. Record the decision.
 
 Later:
 
-Event:
-
-"package_delivered"
+Event: `package_delivered`
 
 System:
+1. Store event.
+2. Check active monitors.
+3. Retrieve trip context.
+4. Agent reasons internally about relevance.
+5. Determine response.
+6. Create notification.
+7. Record action.
+8. Display event in timeline.
 
-Store event.
-Check active monitors.
-Retrieve trip context.
-Determine relevance.
-Determine response.
-Create notification.
-Record action.
-Display event in timeline.
-22. Repository Structure
+---
 
-Initial target:
+# 22. Repository Structure
 
+```
 life-os/
 │
 ├── README.md
@@ -597,10 +656,18 @@ life-os/
 ├── frontend/
 │
 ├── backend/
+│   ├── main.py
+│   ├── api/
+│   ├── services/
+│   ├── models/
+│   ├── schemas/
+│   ├── agent/        ← AI agent module (inside backend)
+│   ├── events/
+│   ├── memory/
+│   ├── database/
+│   └── tests/
 │
 ├── mcp-server/
-│
-├── agent/
 │
 ├── database/
 │
@@ -612,38 +679,46 @@ life-os/
     ├── decisions/
     ├── research/
     └── reviews/
+```
+
+**Key structural decision:** There is NO top-level `agent/` directory.
+The agent is a module inside `backend/agent/`.
 
 Do not create every directory immediately.
-
 Directories should be created when their implementation begins.
 
-23. Development Order
+---
+
+# 23. Development Order
 
 Build in this order:
 
-Repository configuration
-Backend skeleton
-Database connection
-Goal system
-Event system
-MCP server
-MCP tools
-AI agent
-AWS Bedrock integration
-Monitoring engine
-Frontend dashboard
-Event timeline
-AI activity view
-End-to-end integration
-Testing
-Demo preparation
+1. Repository configuration
+2. Backend skeleton
+3. Database connection
+4. Goal system
+5. Event system
+6. MCP server
+7. MCP tools (V1 essential tools only)
+8. AI agent
+9. AWS Bedrock integration
+10. Monitoring engine
+11. Frontend dashboard
+12. Event timeline
+13. AI activity view
+14. End-to-end integration
+15. Testing
+16. Demo preparation
 
 Do not build advanced features before the core loop works.
 
-24. Core Loop
+---
+
+# 24. Core Loop
 
 The minimum working LIFE OS loop is:
 
+```
 USER
  ↓
 AI AGENT
@@ -659,9 +734,11 @@ RESULT
 AI REASONING
  ↓
 USER
+```
 
 The minimum event-driven loop is:
 
+```
 EVENT
  ↓
 MONITOR
@@ -673,24 +750,40 @@ AI REASONING
 ACTION
  ↓
 AUDIT
+```
 
 These two loops must work before adding advanced features.
 
-25. Architecture Decision Rule
+---
+
+# 25. Architecture Decision Rule
 
 When choosing between two implementations:
 
 Prefer the option that is:
 
-simpler
-more reliable
-easier to demonstrate
-easier to test
-easier to explain to judges
+- simpler
+- more reliable
+- easier to demonstrate
+- easier to test
+- easier to explain to judges
 
 Do not choose technology merely because it sounds advanced.
 
-26. Current Architecture Status
+---
+
+# 26. Resolved Architecture Decisions
+
+| Decision | Resolution |
+|---|---|
+| Agent location | Inside `backend/agent/` — no separate top-level `agent/` directory |
+| `evaluate_event` | Removed from MCP tool list — internal agent reasoning step |
+| Memory storage for V1 | PostgreSQL only — no vector database, no pgvector |
+| V1 MCP tool count | 9 essential tools (see §7) |
+
+---
+
+# 27. Current Architecture Status
 
 Frontend: PLANNED
 
