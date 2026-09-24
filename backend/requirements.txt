@@ -1,9 +1,13 @@
 # LIFE OS — Backend dependencies
-# Milestone 1: FastAPI foundation only.
-# Add database, AWS, MCP, and other dependencies in later milestones.
 
+# Web framework
 fastapi==0.115.12
 uvicorn[standard]==0.34.2
+
+# Database
+sqlalchemy==2.0.41
+psycopg2-binary==2.9.10
+alembic==1.16.1
 
 # Testing
 httpx==0.28.1

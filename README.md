@@ -80,6 +80,26 @@ curl http://127.0.0.1:8000/health
 python -m pytest backend/tests/ -v
 ```
 
+### Database (Milestone 2)
+
+Requires a running PostgreSQL instance. Set the connection string in `.env`:
+
+```bash
+cp .env.example .env
+# Edit .env: set DATABASE_URL=postgresql://user:password@localhost:5432/lifeos
+```
+
+Run migrations (from repo root, with venv active):
+
+```bash
+cd backend
+DATABASE_URL=<your-url> alembic upgrade head
+```
+
+For local development without PostgreSQL, the backend falls back to a local
+SQLite file (`lifeos_dev.db`). Tests always use an in-memory SQLite database
+and require no credentials.
+
 ### MCP Server, Frontend (future milestones)
 
 Setup instructions will appear here as each milestone is implemented.
