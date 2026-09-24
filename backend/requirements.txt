@@ -1,0 +1,10 @@
+# LIFE OS — Backend dependencies
+# Milestone 1: FastAPI foundation only.
+# Add database, AWS, MCP, and other dependencies in later milestones.
+
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+
+# Testing
+httpx==0.28.1
+pytest==8.3.5

@@ -57,25 +57,32 @@ See [AGENT_RULES.md](AGENT_RULES.md) for AI agent development rules.
 
 ## Getting Started
 
+### Backend (Milestone 1)
+
 ```bash
-# 1. Copy environment variables
-cp .env.example .env
-# Edit .env with your database URL, AWS region, and Bedrock model ID
+# From the repo root:
 
-# 2. Backend (once implementation begins)
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload
+# 1. Create and activate a virtual environment
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 
-# 3. MCP Server
-cd mcp-server
-# (setup instructions will appear here)
+# 2. Install dependencies
+pip install -r backend/requirements.txt
 
-# 4. Frontend
-cd frontend
-npm install
-npm run dev
+# 3. Start the backend
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+
+# 4. Verify health
+curl http://127.0.0.1:8000/health
+# → {"status":"ok","service":"life-os-backend"}
+
+# 5. Run tests
+python -m pytest backend/tests/ -v
 ```
+
+### MCP Server, Frontend (future milestones)
+
+Setup instructions will appear here as each milestone is implemented.
 
 ---
 
