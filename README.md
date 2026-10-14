@@ -100,9 +100,31 @@ For local development without PostgreSQL, the backend falls back to a local
 SQLite file (`lifeos_dev.db`). Tests always use an in-memory SQLite database
 and require no credentials.
 
-### MCP Server, Frontend (future milestones)
+### MCP Server (Milestone 3)
 
-Setup instructions will appear here as each milestone is implemented.
+```bash
+# From the repo root (same venv as backend):
+pip install -r mcp-server/requirements.txt
+
+# Start the MCP server (default port 8001):
+python mcp-server/server.py
+
+# Or via uvicorn directly:
+uvicorn "mcp-server.server:create_app" --factory --host 127.0.0.1 --port 8001
+
+# MCP endpoint: http://127.0.0.1:8001/mcp
+
+# Run MCP tests:
+python -m pytest mcp-server/tests/ -v
+```
+
+**Architectural note:** `mcp-server/` shares `backend/database` and `backend/models`
+directly. No database code is duplicated. The server adds the repo root to
+`sys.path` at startup so both packages resolve from the same installation.
+
+### Frontend (future milestone)
+
+Setup instructions will appear here when the frontend milestone begins.
 
 ---
 

@@ -1,0 +1,16 @@
+# LIFE OS — MCP Server dependencies
+# The MCP server reuses backend/database and backend/models directly.
+# Install alongside backend/requirements.txt in the same venv.
+
+mcp==1.12.4
+# Pin starlette to the range compatible with both fastapi 0.115.x and mcp 1.12.4
+starlette>=0.46,<0.47
+
+# Database (same as backend — shared venv)
+sqlalchemy==2.0.41
+psycopg2-binary==2.9.10
+
+# Testing
+pytest==8.3.5
+pytest-asyncio==0.26.0
+httpx==0.28.1

@@ -3,6 +3,8 @@
 # Web framework
 fastapi==0.115.12
 uvicorn[standard]==0.34.2
+# Pin starlette to the range compatible with both fastapi 0.115.x and mcp 1.9.4
+starlette>=0.46,<0.47
 
 # Database
 sqlalchemy==2.0.41
