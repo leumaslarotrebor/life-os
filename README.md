@@ -122,6 +122,29 @@ python -m pytest mcp-server/tests/ -v
 directly. No database code is duplicated. The server adds the repo root to
 `sys.path` at startup so both packages resolve from the same installation.
 
+### AI Agent (Milestone 4)
+
+The agent orchestration layer lives in `backend/agent/`. It provides a
+typed interface for intent understanding, context retrieval, tool
+selection, tool execution, result validation, and response generation.
+
+A deterministic `MockModelProvider` is used for testing — no AWS Bedrock
+calls are needed. The real Bedrock provider will be added in a later
+milestone by implementing the same `ModelProvider` interface.
+
+```bash
+# Run agent tests (same venv as backend + MCP server):
+python -m pytest backend/agent/tests/ -v
+
+# Run ALL tests (backend + MCP + agent):
+python -m pytest backend/tests/ mcp-server/tests/ backend/agent/tests/ -v
+```
+
+**Architecture:** The agent imports the V1 tool functions from
+`mcp-server/tools/v1_tools.py` directly — no duplication of database
+logic. The `ModelProvider` abstract interface allows swapping the mock
+for Bedrock without changing the orchestrator.
+
 ### Frontend (future milestone)
 
 Setup instructions will appear here when the frontend milestone begins.
