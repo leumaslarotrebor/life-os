@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # The MCP tools live in mcp-server/tools/v1_tools.py.  We need that directory
 # on sys.path so we can import the tool functions directly without duplicating
 # the SQLAlchemy model logic.
-_REPO_ROOT = Path(__file__).resolve().parents[3]  # backend/agent/ -> repo root
+_REPO_ROOT = Path(__file__).resolve().parents[2]  # backend/agent/ -> backend/ -> repo root
 _MCP_TOOLS_DIR = _REPO_ROOT / "mcp-server" / "tools"
 
 if str(_MCP_TOOLS_DIR) not in sys.path:

@@ -26,7 +26,6 @@ Key design decisions:
 - Every step is recorded as an AgentStep for the audit trail.
 - If a tool fails, the agent reports the failure honestly — never fabricates
   success (AGENT_RULES.md §7).
-- The agent records an audit action for each tool call it makes.
 """
 
 from __future__ import annotations
